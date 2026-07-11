@@ -1,4 +1,6 @@
 // Code generated from grammar.spec; DO NOT EDIT.
 package parser
 
-func Parse(input string) bool { return len(input) > 2 }
+import "strings"
+
+func Parse(input string) bool { return len(input) > 2 && strings.Contains(input, ":") }
