@@ -1,3 +1,3 @@
 #!/bin/sh
 # Synthetic generator marker used by DiffCue acceptance tests.
-echo 'grammar.spec -> parser_generated.go'
+echo 'regenerate signed-value parser: grammar.spec -> parser_generated.go'
