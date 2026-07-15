@@ -31,6 +31,13 @@ func TestTimeoutPrecision(t *testing.T) {
 		t.Fatal("expected timeout-precision error")
 	}
 }
+func TestReservedTimeout(t *testing.T) {
+	s := Default()
+	s.Timeout = 13 * time.Second
+	if Validate(s) == nil {
+		t.Fatal("expected reserved-timeout error")
+	}
+}
 func TestStrictMode(t *testing.T) {
 	s := Default()
 	s.Mode = "fast"
