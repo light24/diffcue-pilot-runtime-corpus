@@ -18,16 +18,28 @@ jobs:
     timeout-minutes: 20
     env:
       DIFFCUE_CACHE_DIR: ${{ vars.DIFFCUE_CACHE_DIR }}
+      DIFFCUE_PROVIDER_STORE: ${{ vars.DIFFCUE_PROVIDER_STORE }}
     steps:
       - name: Require durable repository experiment cache
         run: |
           test -n "$DIFFCUE_CACHE_DIR" || { echo "Set repository variable DIFFCUE_CACHE_DIR to a durable path shared by this repository's experiment runners" >&2; exit 1; }
+          test -n "$DIFFCUE_PROVIDER_STORE" || { echo "Set repository variable DIFFCUE_PROVIDER_STORE to a durable private mirror path" >&2; exit 1; }
           test -n "${{ vars.DIFFCUE_BINARY_SHA256 }}" || { echo "Set DIFFCUE_BINARY_SHA256 to the frozen pilot binary digest" >&2; exit 1; }
           printf '%s  %s\n' "${{ vars.DIFFCUE_BINARY_SHA256 }}" "$(command -v diffcue)" | sha256sum --check --strict
       - name: Checkout full history
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: 0
+      - name: Refresh verified review evidence
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if diffcue import reviews status --repo . --provider-store "$DIFFCUE_PROVIDER_STORE" | jq -e '.offline_ready == true' >/dev/null; then
+            sync_mode=--incremental
+          else
+            sync_mode=--all-history
+          fi
+          diffcue import reviews github --repo . --provider-store "$DIFFCUE_PROVIDER_STORE" "$sync_mode" --transport rest
       - name: Publish randomized informational DiffCue Check
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

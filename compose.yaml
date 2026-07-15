@@ -78,6 +78,7 @@ services:
       RUNNER_NAME: ${RUNNER_NAME:-diffcue-pilot}
       RUNNER_LABELS: ${RUNNER_LABEL:-diffcue-pilot}
       DIFFCUE_CACHE_DIR: /var/lib/diffcue
+      DIFFCUE_PROVIDER_STORE: ${DIFFCUE_PROVIDER_STORE:-/var/lib/diffcue/provider-review}
       PATH: /opt/diffcue:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
     volumes:
       - runner-home:/home/runner
@@ -113,6 +114,7 @@ services:
     environment:
       GITHUB_TOKEN: ${DIFFCUE_TOKEN:-}
       DIFFCUE_CACHE_DIR: /var/lib/diffcue
+      DIFFCUE_PROVIDER_STORE: ${DIFFCUE_PROVIDER_STORE:-/var/lib/diffcue/provider-review}
     volumes: *tool-volumes
 
   smoke:

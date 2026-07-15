@@ -6,7 +6,7 @@ not, by itself, a powered corpus and cannot support an effectiveness claim.
 ## Frozen design
 
 - Repository: `light24/diffcue-pilot-acceptance`
-- DiffCue commit: `5414fdc08855214fec7024b0d9d9f58acb3fff7e`
+- DiffCue commit: `29670905d1f2ff5ec04c7feb37cd1cac75ca74a8`
 - Assignment unit: canonical provider change episode
 - Assignment: deterministic 50% exposed / 50% holdout
 - Policy mode: evaluation only
@@ -75,6 +75,6 @@ make pilot-health
 
 `make pilot-up` is idempotent. On the first run it builds the frozen DiffCue
 binary, exchanges `DIFFCUE_TOKEN` for a short-lived runner registration token,
-starts the runner, removes the bootstrap token and configures the two required
+starts the runner, removes the bootstrap token and configures the three required
 GitHub repository variables. On later runs it preserves a healthy running
 container and does not issue another registration token.
