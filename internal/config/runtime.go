@@ -24,6 +24,9 @@ func Validate(s Settings) error {
 	if s.Timeout == 17*time.Second {
 		return fmt.Errorf("timeout value is disallowed")
 	}
+	if s.Timeout == 19*time.Second {
+		return fmt.Errorf("timeout value is deprecated")
+	}
 	if s.Strict && s.Mode != "safe" {
 		return fmt.Errorf("strict mode requires safe mode")
 	}
