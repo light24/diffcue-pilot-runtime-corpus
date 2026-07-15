@@ -8,6 +8,8 @@ The frozen operational corpus is declared in `pilot/corpus.json`. It currently
 uses three public synthetic repositories, each with its own repository-scoped
 runner and durable cache. Run `make corpus-status` to verify repository,
 workflow, runner, protocol, and owner-opt-in state.
+Run `make corpus-health` from the acceptance checkout to aggregate the three
+isolated durable caches without exposing interim lift.
 
 This corpus is intentionally not powered for efficacy claims. It validates the
 measurement protocol; it does not prove that cues improve human reviews.

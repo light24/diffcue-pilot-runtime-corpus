@@ -5,7 +5,7 @@ SHELL := /bin/bash
 
 COMPOSE := docker compose --env-file .env
 
-.PHONY: help check-env docker-ready pilot-binary runner-token pilot-up pilot-down pilot-reset pilot-status pilot-logs pilot-doctor pilot-smoke pilot-health pilot-final-report corpus-status github-variables
+.PHONY: help check-env docker-ready pilot-binary runner-token pilot-up pilot-down pilot-reset pilot-status pilot-logs pilot-doctor pilot-smoke pilot-health pilot-final-report corpus-status corpus-health github-variables
 
 help:
 	@printf '%s\n' \
@@ -16,6 +16,7 @@ help:
 	  'make pilot-smoke       Run a containerized no-measurement/no-publication smoke' \
 	  'make pilot-health      Show health only; intentionally hides interim lift' \
 	  'make corpus-status     Verify the frozen multi-repository synthetic corpus' \
+	  'make corpus-health     Aggregate health from all local corpus caches' \
 	  'make github-variables  Freeze cache and binary digest repository variables' \
 	  'make pilot-down        Stop without deleting durable state' \
 	  'make pilot-reset       Explicitly unregister the runner and delete durable local state'
@@ -82,6 +83,9 @@ corpus-status: check-env docker-ready
 	@test -n "$${DIFFCUE_TOKEN:-}" || { echo 'DIFFCUE_TOKEN is required in the process environment' >&2; exit 1; }
 	@$(COMPOSE) --profile tools run --rm --no-deps --entrypoint /pilot-repo/pilot/scripts/corpus-status.sh \
 	  -e DIFFCUE_TOKEN="$${DIFFCUE_TOKEN}" health /pilot-repo/pilot/corpus.json
+
+corpus-health: docker-ready
+	@./pilot/scripts/local-corpus-health.sh ./pilot/corpus.json
 
 github-variables: pilot-binary
 	@test -n "$${DIFFCUE_TOKEN:-}" || { echo 'DIFFCUE_TOKEN is required in the process environment' >&2; exit 1; }
