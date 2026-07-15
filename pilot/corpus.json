@@ -1,0 +1,51 @@
+{
+  "schema_version": "diffcue-pilot-corpus-v1",
+  "corpus_kind": "synthetic_operational_protocol",
+  "claim_boundary": "This corpus validates protocol operation, isolation, receipts, holdout, and outcome plumbing. It cannot establish human intervention lift or product efficacy.",
+  "frozen_at": "2026-07-15T12:20:00Z",
+  "protocol": {
+    "diffcue_commit": "7b5c4797aa92e57a159bf626dacbf8c1fbf8c779",
+    "policy_version": "review-policy-v3-auditable-context",
+    "assignment_policy": "cue-utility-assignment-v1",
+    "assignment_unit": "provider_change_episode",
+    "holdout_basis_points": 5000,
+    "outcome_window": "through provider change-episode closure",
+    "policy_mode": "evaluation_only"
+  },
+  "owner_opt_in": {
+    "owner": "light24",
+    "status": "explicit",
+    "scope": "synthetic commits, pull requests, checks, receipts, and outcome observations in the listed repositories",
+    "recorded_at": "2026-07-15T12:20:00Z"
+  },
+  "repositories": [
+    {
+      "repository": "light24/diffcue-pilot-acceptance",
+      "scenario_families": ["review_followup", "exact_linked_test", "exposed_and_holdout"],
+      "runner_scope": "repository",
+      "durable_state_scope": "repository",
+      "status": "active"
+    },
+    {
+      "repository": "light24/diffcue-pilot-runtime-corpus",
+      "scenario_families": ["exact_linked_test", "relationship_companion", "holdout"],
+      "runner_scope": "repository",
+      "durable_state_scope": "repository",
+      "status": "active"
+    },
+    {
+      "repository": "light24/diffcue-pilot-parser-corpus",
+      "scenario_families": ["silent_decision", "generated_companion", "receipt_recovery"],
+      "runner_scope": "repository",
+      "durable_state_scope": "repository",
+      "status": "active"
+    }
+  ],
+  "limitations": {
+    "repository_count": 3,
+    "owner_count": 1,
+    "human_authored_change_clusters": 0,
+    "powered_for_lift": false,
+    "marketing_claims_allowed": false
+  }
+}

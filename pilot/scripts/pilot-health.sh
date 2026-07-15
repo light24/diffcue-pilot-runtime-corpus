@@ -12,7 +12,8 @@ trap 'rm -f "$events" "$utility"' EXIT
 
 jq -n --slurpfile events "$events" --slurpfile utility "$utility" '{
   schema_version: "diffcue-pilot-health-v1",
-  publication_failures: $events[0].errors,
+  publication_failures: ($events[0].unresolved_errors // $events[0].errors),
+  historical_failures: $events[0].errors,
   orphaned_runs: $events[0].orphaned_runs,
   duplicate_runs: $events[0].duplicate_runs,
   missing_or_corrupt_state: false,
@@ -33,4 +34,4 @@ jq -n --slurpfile events "$events" --slurpfile utility "$utility" '{
   policy_effect: $utility[0].outcome_quality.policy_effect
 }'
 
-jq -e '.errors == 0 and .orphaned_runs == 0 and .duplicate_runs == 0' "$events" >/dev/null
+jq -e '(.unresolved_errors // .errors) == 0 and .orphaned_runs == 0 and .duplicate_runs == 0' "$events" >/dev/null
