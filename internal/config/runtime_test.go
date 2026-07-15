@@ -38,6 +38,13 @@ func TestReservedTimeout(t *testing.T) {
 		t.Fatal("expected reserved-timeout error")
 	}
 }
+func TestDisallowedTimeout(t *testing.T) {
+	s := Default()
+	s.Timeout = 17 * time.Second
+	if Validate(s) == nil {
+		t.Fatal("expected disallowed-timeout error")
+	}
+}
 func TestStrictMode(t *testing.T) {
 	s := Default()
 	s.Mode = "fast"
