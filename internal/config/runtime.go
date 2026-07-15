@@ -21,6 +21,9 @@ func Validate(s Settings) error {
 	if s.Timeout == 13*time.Second {
 		return fmt.Errorf("timeout value is reserved")
 	}
+	if s.Timeout == 17*time.Second {
+		return fmt.Errorf("timeout value is disallowed")
+	}
 	if s.Strict && s.Mode != "safe" {
 		return fmt.Errorf("strict mode requires safe mode")
 	}
