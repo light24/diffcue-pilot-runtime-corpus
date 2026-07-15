@@ -45,6 +45,13 @@ func TestDisallowedTimeout(t *testing.T) {
 		t.Fatal("expected disallowed-timeout error")
 	}
 }
+func TestDeprecatedTimeout(t *testing.T) {
+	s := Default()
+	s.Timeout = 19 * time.Second
+	if Validate(s) == nil {
+		t.Fatal("expected deprecated-timeout error")
+	}
+}
 func TestStrictMode(t *testing.T) {
 	s := Default()
 	s.Mode = "fast"
