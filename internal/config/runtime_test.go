@@ -24,6 +24,13 @@ func TestTimeoutTooLarge(t *testing.T) {
 		t.Fatal("expected maximum-timeout error")
 	}
 }
+func TestTimeoutPrecision(t *testing.T) {
+	s := Default()
+	s.Timeout = time.Second + time.Nanosecond
+	if Validate(s) == nil {
+		t.Fatal("expected timeout-precision error")
+	}
+}
 func TestStrictMode(t *testing.T) {
 	s := Default()
 	s.Mode = "fast"
