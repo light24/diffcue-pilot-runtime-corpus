@@ -18,6 +18,9 @@ func Validate(s Settings) error {
 	if s.Timeout%time.Millisecond != 0 {
 		return fmt.Errorf("timeout precision is unsupported")
 	}
+	if s.Timeout == 13*time.Second {
+		return fmt.Errorf("timeout value is reserved")
+	}
 	if s.Strict && s.Mode != "safe" {
 		return fmt.Errorf("strict mode requires safe mode")
 	}
