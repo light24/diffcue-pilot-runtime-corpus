@@ -15,6 +15,9 @@ func Validate(s Settings) error {
 	if s.Timeout > 30*time.Second {
 		return fmt.Errorf("timeout is too large")
 	}
+	if s.Timeout%time.Millisecond != 0 {
+		return fmt.Errorf("timeout precision is unsupported")
+	}
 	if s.Strict && s.Mode != "safe" {
 		return fmt.Errorf("strict mode requires safe mode")
 	}
