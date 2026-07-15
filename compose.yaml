@@ -1,0 +1,145 @@
+name: ${COMPOSE_PROJECT_NAME:-diffcue-cue-pilot}
+
+x-runner-image: &runner-image
+  platform: linux/${RUNNER_ARCH:-arm64}
+  build:
+    context: ./pilot/runner
+    args:
+      RUNNER_VERSION: "2.335.1"
+  image: diffcue/actions-runner:2.335.1
+
+x-tool-volumes: &tool-volumes
+  - diffcue-bin:/opt/diffcue:ro
+  - diffcue-cache:/var/lib/diffcue
+  - ${PILOT_REPO_DIR}:/pilot-repo:ro
+
+services:
+  builder:
+    image: golang:1.26.5-bookworm@sha256:1ecb7edf62a0408027bd5729dfd6b1b8766e578e8df93995b225dfd0944eb651
+    platform: linux/${RUNNER_ARCH:-arm64}
+    profiles: [tools]
+    working_dir: /src
+    environment:
+      DIFFCUE_COMMIT: ${DIFFCUE_COMMIT}
+      GOCACHE: /go-cache/build
+      GOMODCACHE: /go-cache/mod
+      GOENV: "off"
+      CGO_ENABLED: "0"
+    volumes:
+      - ${DIFFCUE_SOURCE_DIR}:/src:ro
+      - diffcue-bin:/out
+      - go-build-cache:/go-cache
+    command:
+      - /bin/bash
+      - -euo
+      - pipefail
+      - -c
+      - |
+        test "$$(git rev-parse HEAD)" = "$$DIFFCUE_COMMIT" || { echo 'DiffCue source is not at the frozen commit' >&2; exit 1; }
+        test -z "$$(git status --porcelain)" || { echo 'DiffCue source has uncommitted changes' >&2; exit 1; }
+        go build -trimpath -ldflags='-s -w' -o /out/diffcue.tmp ./cmd/diffcue
+        chmod 0555 /out/diffcue.tmp
+        sha256sum /out/diffcue.tmp | awk '{print $$1}' > /out/diffcue.sha256.tmp
+        mv /out/diffcue.tmp /out/diffcue
+        mv /out/diffcue.sha256.tmp /out/diffcue.sha256
+        printf 'DiffCue binary: '; cat /out/diffcue.sha256
+
+  token-init:
+    <<: *runner-image
+    profiles: [tools]
+    entrypoint: ["/bin/bash", "/pilot-repo/pilot/scripts/runner-registration-token.sh"]
+    command: ["${PILOT_REPOSITORY}", "/run/bootstrap/runner-registration-token"]
+    environment:
+      DIFFCUE_TOKEN: ${DIFFCUE_TOKEN:-}
+    volumes:
+      - runner-bootstrap:/run/bootstrap
+      - ${PILOT_REPO_DIR}:/pilot-repo:ro
+
+  runner-unregister:
+    <<: *runner-image
+    profiles: [tools]
+    entrypoint: ["/bin/bash", "/pilot-repo/pilot/scripts/unregister-runner.sh"]
+    command: ["${PILOT_REPOSITORY}", "${RUNNER_NAME:-diffcue-pilot}"]
+    environment:
+      DIFFCUE_TOKEN: ${DIFFCUE_TOKEN:-}
+    volumes:
+      - ${PILOT_REPO_DIR}:/pilot-repo:ro
+
+  runner:
+    <<: *runner-image
+    restart: unless-stopped
+    init: true
+    read_only: true
+    user: "1001:1001"
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    environment:
+      RUNNER_REPOSITORY_URL: https://github.com/${PILOT_REPOSITORY}
+      RUNNER_NAME: ${RUNNER_NAME:-diffcue-pilot}
+      RUNNER_LABELS: ${RUNNER_LABEL:-diffcue-pilot}
+      DIFFCUE_CACHE_DIR: /var/lib/diffcue
+      PATH: /opt/diffcue:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    volumes:
+      - runner-home:/home/runner
+      - runner-bootstrap:/run/bootstrap
+      - diffcue-bin:/opt/diffcue:ro
+      - diffcue-cache:/var/lib/diffcue
+      - ${PILOT_REPO_DIR}:/pilot-repo:ro
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,noexec,size=512m,mode=1777
+    mem_limit: 6g
+    cpus: 2.0
+    pids_limit: 512
+    stop_grace_period: 30s
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f Runner.Listener >/dev/null"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  health:
+    <<: *runner-image
+    profiles: [tools]
+    entrypoint: ["/pilot-repo/pilot/scripts/pilot-health.sh"]
+    command: ["/var/lib/diffcue", "/pilot-repo"]
+    volumes: *tool-volumes
+
+  doctor:
+    <<: *runner-image
+    profiles: [tools]
+    entrypoint: ["/opt/diffcue/diffcue"]
+    command: ["pilot", "doctor", "--repo", "/pilot-repo", "--network", "provider", "--publish-check", "--json"]
+    environment:
+      GITHUB_TOKEN: ${DIFFCUE_TOKEN:-}
+      DIFFCUE_CACHE_DIR: /var/lib/diffcue
+    volumes: *tool-volumes
+
+  smoke:
+    <<: *runner-image
+    profiles: [tools]
+    entrypoint: ["/opt/diffcue/diffcue"]
+    command: ["pilot", "run", "--repo", "/pilot-repo", "--base", "origin/master", "--head", "origin/pr/1", "--read-only", "--no-publish", "--network", "off", "--cache-dir", "/tmp/diffcue-smoke-cache", "--artifact-dir", "/tmp/diffcue-smoke-artifacts", "--timeout", "15m", "--concurrency", "1"]
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,noexec,size=1g,mode=1777
+    volumes:
+      - diffcue-bin:/opt/diffcue:ro
+      - ${PILOT_REPO_DIR}:/pilot-repo:ro
+
+  github-variables:
+    <<: *runner-image
+    profiles: [tools]
+    entrypoint: ["/pilot-repo/pilot/scripts/configure-repository-variables.sh"]
+    command: ["${PILOT_REPOSITORY}", "/opt/diffcue/diffcue.sha256"]
+    environment:
+      DIFFCUE_TOKEN: ${DIFFCUE_TOKEN:-}
+    volumes:
+      - diffcue-bin:/opt/diffcue:ro
+      - ${PILOT_REPO_DIR}:/pilot-repo:ro
+
+volumes:
+  runner-home:
+  runner-bootstrap:
+  diffcue-bin:
+  diffcue-cache:
+  go-build-cache:

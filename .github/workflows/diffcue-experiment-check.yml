@@ -1,0 +1,47 @@
+# generated-by: diffcue-pilot
+name: DiffCue Cue Utility Experiment
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+  checks: write
+
+jobs:
+  diffcue-experiment:
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, diffcue-pilot]
+    timeout-minutes: 20
+    env:
+      DIFFCUE_CACHE_DIR: ${{ vars.DIFFCUE_CACHE_DIR }}
+    steps:
+      - name: Require durable repository experiment cache
+        run: |
+          test -n "$DIFFCUE_CACHE_DIR" || { echo "Set repository variable DIFFCUE_CACHE_DIR to a durable path shared by this repository's experiment runners" >&2; exit 1; }
+          test -n "${{ vars.DIFFCUE_BINARY_SHA256 }}" || { echo "Set DIFFCUE_BINARY_SHA256 to the frozen pilot binary digest" >&2; exit 1; }
+          printf '%s  %s\n' "${{ vars.DIFFCUE_BINARY_SHA256 }}" "$(command -v diffcue)" | sha256sum --check --strict
+      - name: Checkout full history
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+      - name: Publish randomized informational DiffCue Check
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: >-
+          diffcue pilot run --repo . --base "${{ github.event.pull_request.base.sha || 'HEAD^' }}"
+          --head "${{ github.event.pull_request.head.sha || 'HEAD' }}" --publish-check
+          --network provider --measure-cue-utility --cue-holdout-bps 5000
+          --cache-dir "$DIFFCUE_CACHE_DIR" --timeout 15m --memory-limit 4GiB --concurrency 1
+          --artifact-dir "$RUNNER_TEMP/diffcue-pilot"
+      - name: Upload DiffCue artifact
+        if: always()
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0
+        with:
+          name: diffcue-experiment-${{ github.run_id }}
+          path: ${{ runner.temp }}/diffcue-pilot
+          if-no-files-found: warn
+          retention-days: 14
